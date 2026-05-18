@@ -1,8 +1,7 @@
 # WorkOS → Keycloak Migrator
 
 Three-component project that migrates an identity system from WorkOS into Keycloak (with Phase Two's
-organizations & webhooks extensions installed). Maven group `io.phasetwo.migration`, Java package
-`io.phasetwo.migration.*`.
+organizations & webhooks extensions installed). 
 
 | Module | Artifact | Role |
 | --- | --- | --- |
