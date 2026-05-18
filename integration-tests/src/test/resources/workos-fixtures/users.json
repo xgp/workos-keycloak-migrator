@@ -1,0 +1,51 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "user",
+      "id": "user_TEST_alice",
+      "email": "alice@acme.example.com",
+      "email_verified": true,
+      "first_name": "Alice",
+      "last_name": "Anderson",
+      "profile_picture_url": null,
+      "external_id": "ext_alice",
+      "locale": "en-US",
+      "last_sign_in_at": "2026-01-10T12:00:00.000Z",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "metadata": {"timezone": "America/New_York"}
+    },
+    {
+      "object": "user",
+      "id": "user_TEST_bob",
+      "email": "bob@globex.example.com",
+      "email_verified": false,
+      "first_name": "Bob",
+      "last_name": "Brown",
+      "profile_picture_url": "https://example.com/bob.png",
+      "external_id": null,
+      "locale": "en-GB",
+      "last_sign_in_at": null,
+      "created_at": "2026-01-02T00:00:00.000Z",
+      "updated_at": "2026-01-02T00:00:00.000Z",
+      "metadata": {}
+    },
+    {
+      "object": "user",
+      "id": "user_TEST_carol",
+      "email": "carol@initech.example.com",
+      "email_verified": true,
+      "first_name": "Carol",
+      "last_name": "Carter",
+      "profile_picture_url": null,
+      "external_id": null,
+      "locale": null,
+      "last_sign_in_at": null,
+      "created_at": "2026-01-03T00:00:00.000Z",
+      "updated_at": "2026-01-03T00:00:00.000Z",
+      "metadata": {}
+    }
+  ],
+  "list_metadata": {"before": null, "after": null}
+}

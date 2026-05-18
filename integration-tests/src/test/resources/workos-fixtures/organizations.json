@@ -1,0 +1,58 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "organization",
+      "id": "org_TEST_acme",
+      "name": "Acme Inc",
+      "external_id": "ext_acme",
+      "stripe_customer_id": null,
+      "metadata": {"tier": "gold"},
+      "domains": [
+        {
+          "object": "organization_domain",
+          "id": "org_domain_acme",
+          "organization_id": "org_TEST_acme",
+          "domain": "acme.example.com",
+          "state": "verified",
+          "verification_strategy": "dns",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "object": "organization",
+      "id": "org_TEST_globex",
+      "name": "Globex Corp",
+      "external_id": null,
+      "metadata": {},
+      "domains": [
+        {
+          "object": "organization_domain",
+          "id": "org_domain_globex",
+          "organization_id": "org_TEST_globex",
+          "domain": "globex.example.com",
+          "state": "pending",
+          "created_at": "2026-01-01T00:00:00.000Z",
+          "updated_at": "2026-01-01T00:00:00.000Z"
+        }
+      ],
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "object": "organization",
+      "id": "org_TEST_initech",
+      "name": "Initech",
+      "external_id": null,
+      "metadata": {"region": "us-west"},
+      "domains": [],
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "list_metadata": {"before": null, "after": null}
+}

@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.phasetwo.wkm</groupId>
+        <artifactId>workos-keycloak-migrator-parent</artifactId>
+        <version>0.1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>integration-tests</artifactId>
+    <name>WorkOS to Keycloak Migrator (Integration Tests)</name>
+
+    <properties>
+        <!-- Failsafe is opted-in via -Pit; this property is also flipped by the profile. -->
+        <skipITs>true</skipITs>
+        <wkm.phasetwo.image>quay.io/phasetwo/phasetwo-keycloak</wkm.phasetwo.image>
+        <wkm.phasetwo.tag>26.5.7</wkm.phasetwo.tag>
+        <wkm.rest-provider.version>6.2.1</wkm.rest-provider.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.phasetwo.wkm</groupId>
+            <artifactId>common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.phasetwo.wkm</groupId>
+            <artifactId>migrator</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-admin-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wiremock</groupId>
+            <artifactId>wiremock-standalone</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- Copy the freshly built extension jars + the keycloak-rest-provider jar into
+                 target/providers so the Keycloak container can mount the directory. -->
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-provider-jars</id>
+                        <phase>pre-integration-test</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.build.directory}/providers</outputDirectory>
+                            <stripVersion>true</stripVersion>
+                            <artifactItems>
+                                <artifactItem>
+                                    <groupId>io.phasetwo.wkm</groupId>
+                                    <artifactId>webhook-listener</artifactId>
+                                    <version>${project.version}</version>
+                                    <destFileName>workos-webhook-listener.jar</destFileName>
+                                </artifactItem>
+                                <artifactItem>
+                                    <groupId>io.phasetwo.wkm</groupId>
+                                    <artifactId>slow-migration</artifactId>
+                                    <version>${project.version}</version>
+                                    <destFileName>workos-slow-migration.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <skipITs>${skipITs}</skipITs>
+                    <systemPropertyVariables>
+                        <wkm.providers.dir>${project.build.directory}/providers</wkm.providers.dir>
+                        <wkm.phasetwo.image>${wkm.phasetwo.image}</wkm.phasetwo.image>
+                        <wkm.phasetwo.tag>${wkm.phasetwo.tag}</wkm.phasetwo.tag>
+                    </systemPropertyVariables>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Depend on the extension jars so the reactor builds them before this module. -->
+    <profiles>
+        <profile>
+            <id>it</id>
+            <properties>
+                <skipITs>false</skipITs>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>io.phasetwo.wkm</groupId>
+                    <artifactId>webhook-listener</artifactId>
+                    <version>${project.version}</version>
+                    <type>jar</type>
+                    <scope>provided</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.phasetwo.wkm</groupId>
+                    <artifactId>slow-migration</artifactId>
+                    <version>${project.version}</version>
+                    <type>jar</type>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+</project>

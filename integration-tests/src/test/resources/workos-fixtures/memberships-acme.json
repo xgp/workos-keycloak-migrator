@@ -1,0 +1,18 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "organization_membership",
+      "id": "om_TEST_alice_acme",
+      "user_id": "user_TEST_alice",
+      "organization_id": "org_TEST_acme",
+      "status": "active",
+      "directory_managed": false,
+      "role": {"slug": "wkm-admin"},
+      "role_assignments": [{"id": "ra_1", "role": {"slug": "wkm-admin"}}],
+      "created_at": "2026-01-05T00:00:00.000Z",
+      "updated_at": "2026-01-05T00:00:00.000Z"
+    }
+  ],
+  "list_metadata": {"before": null, "after": null}
+}

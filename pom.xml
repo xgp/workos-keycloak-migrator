@@ -15,6 +15,7 @@
         <module>common</module>
         <module>migrator</module>
         <module>extensions</module>
+        <module>integration-tests</module>
     </modules>
 
     <properties>
@@ -40,12 +41,14 @@
         <mockito.version>5.12.0</mockito.version>
         <wiremock.version>3.13.2</wiremock.version>
         <assertj.version>3.26.3</assertj.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
 
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-dependency-plugin.version>3.7.1</maven-dependency-plugin.version>
+        <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -173,6 +176,14 @@
                 <version>${wiremock.version}</version>
                 <scope>test</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -202,6 +213,10 @@
                 <plugin>
                     <artifactId>maven-dependency-plugin</artifactId>
                     <version>${maven-dependency-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>
