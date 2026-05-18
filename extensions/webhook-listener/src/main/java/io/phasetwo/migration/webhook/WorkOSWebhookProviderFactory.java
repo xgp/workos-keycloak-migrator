@@ -1,5 +1,6 @@
 package io.phasetwo.migration.webhook;
 
+import com.google.auto.service.AutoService;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.workos.WorkOSHttpClient;
 import io.phasetwo.migration.common.workos.model.WWebhookEndpoint;
@@ -17,6 +18,7 @@ import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@AutoService(RealmResourceProviderFactory.class)
 public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactory {
 
     private static final Logger log = LoggerFactory.getLogger(WorkOSWebhookProviderFactory.class);
