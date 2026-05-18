@@ -1,5 +1,6 @@
 package io.phasetwo.migration.legacy;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.google.auto.service.AutoService;
 import io.phasetwo.migration.common.AttributeKeys;
 import java.security.SecureRandom;
@@ -15,14 +16,9 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @AutoService(RealmResourceProviderFactory.class)
+@JBossLog
 public class WorkOSLegacyProviderFactory implements RealmResourceProviderFactory {
-
-    private static final Logger log = LoggerFactory.getLogger(WorkOSLegacyProviderFactory.class);
-
     static final String ID = "workos-legacy";
     /**
      * Provider id of the user-federation factory shipped by daniel-frak/keycloak-user-migration.
@@ -94,7 +90,7 @@ public class WorkOSLegacyProviderFactory implements RealmResourceProviderFactory
                     try {
                         provisionRealm(realm, s);
                     } catch (Exception e) {
-                        log.warn("provision failed for realm {}: {}", realm.getName(), e.toString());
+                        log.warnf("provision failed for realm %s: %s", realm.getName(), e.toString());
                     }
                 });
                 s.getTransactionManager().commit();
@@ -102,7 +98,7 @@ public class WorkOSLegacyProviderFactory implements RealmResourceProviderFactory
                 s.close();
             }
         } catch (Throwable t) {
-            log.error("workos-legacy provisioning errored: {}", t.toString());
+            log.errorf("workos-legacy provisioning errored: %s", t.toString());
         }
     }
 
@@ -130,7 +126,7 @@ public class WorkOSLegacyProviderFactory implements RealmResourceProviderFactory
                 .filter(c -> componentName.equals(c.getName()))
                 .findFirst();
         if (existing.isPresent()) {
-            log.info("realm {}: legacy migration component already present (id={})", realm.getName(), existing.get().getId());
+            log.infof("realm %s: legacy migration component already present (id=%s)", realm.getName(), existing.get().getId());
             return;
         }
         ComponentModel cm = new ComponentModel();
@@ -149,9 +145,9 @@ public class WorkOSLegacyProviderFactory implements RealmResourceProviderFactory
         cm.getConfig().putSingle("UPDATE_USER_ON_LOGIN", "true");
         try {
             realm.addComponentModel(cm);
-            log.info("realm {}: registered legacy migration component", realm.getName());
+            log.infof("realm %s: registered legacy migration component", realm.getName());
         } catch (Exception e) {
-            log.warn("realm {}: could not register legacy migration component: {}", realm.getName(), e.toString());
+            log.warnf("realm %s: could not register legacy migration component: %s", realm.getName(), e.toString());
         }
     }
 

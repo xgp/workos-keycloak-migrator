@@ -1,17 +1,14 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.openapi.model.IdentityProviderRepresentation;
 import io.phasetwo.client.openapi.model.OrganizationRepresentation;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.keycloak.Lookups;
 import io.phasetwo.migration.common.workos.model.WConnection;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+@JBossLog
 public class IdentityProviderSync implements EntitySync<WConnection> {
-
-    private static final Logger log = LoggerFactory.getLogger(IdentityProviderSync.class);
     private static final String ENTITY = "identity_provider";
 
     private final SyncContext ctx;
@@ -79,7 +76,7 @@ public class IdentityProviderSync implements EntitySync<WConnection> {
             return SyncResult.partial(ENTITY, c.id(), alias, "incomplete_config")
                     .withKeycloakId(created != null ? created : alias);
         } catch (Exception e) {
-            log.error("idp sync failed for {}: {}", c.id(), e.toString());
+            log.errorf("idp sync failed for %s: %s", c.id(), e.toString());
             return SyncResult.failed(ENTITY, c.id(), e.toString());
         }
     }

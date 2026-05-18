@@ -1,5 +1,6 @@
 package io.phasetwo.migration.migrator;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.PhaseTwo;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.state.Counters;
@@ -16,8 +17,6 @@ import java.util.concurrent.Callable;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 @CommandLine.Command(
@@ -25,10 +24,8 @@ import picocli.CommandLine;
         mixinStandardHelpOptions = true,
         description = "Migrate WorkOS entities into Keycloak with Phase Two extensions.",
         versionProvider = Main.VersionProvider.class)
+@JBossLog
 public class Main implements Callable<Integer> {
-
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
-
     @CommandLine.Option(names = "--workos-api-key", required = true,
             description = "WorkOS API key (sk_...). May also be set via WORKOS_API_KEY env var.",
             defaultValue = "${WORKOS_API_KEY}")
@@ -89,7 +86,7 @@ public class Main implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        log.info("Starting WorkOS → Keycloak migration into realm {} at {}", keycloakRealm, keycloakUrl);
+        log.infof("Starting WorkOS → Keycloak migration into realm %s at %s", keycloakRealm, keycloakUrl);
 
         Set<String> entities = parseEntities(entitiesArg);
         String fingerprint = Hashes.fingerprint(workosApiKey);
@@ -110,8 +107,7 @@ public class Main implements Callable<Integer> {
         MigrationState state = new MigrationState(keycloak.realm(keycloakRealm));
         String stored = state.get(AttributeKeys.REALM_CLIENT_FINGERPRINT);
         if (stored != null && !stored.equals(fingerprint) && !forceRebind) {
-            log.error("Realm {} has client_fingerprint={} but supplied API key fingerprints to {}. Use --force-rebind to override.",
-                    keycloakRealm, stored, fingerprint);
+            log.errorf("Realm %s has client_fingerprint=%s but supplied API key fingerprints to %s. Use --force-rebind to override.", keycloakRealm, stored, fingerprint);
             return 2;
         }
         state.set(AttributeKeys.REALM_CLIENT_FINGERPRINT, fingerprint);
@@ -137,7 +133,7 @@ public class Main implements Callable<Integer> {
             if (entities.contains("directory_users")) safe(steps::runDirectoryUsers);
         } catch (Exception e) {
             ok = false;
-            log.error("aborted: {}", e.toString(), e);
+            log.errorf(e, "aborted: %s", e.toString());
         }
 
         // Persist run state
@@ -148,8 +144,8 @@ public class Main implements Callable<Integer> {
         // Final report
         log.info("================ Migration summary ================");
         counters.snapshot().forEach((entity, byAction) ->
-                log.info("{}: {}", entity, byAction));
-        log.info("Total failed: {}", counters.total(SyncAction.FAILED));
+                log.infof("%s: %s", entity, byAction));
+        log.infof("Total failed: %s", counters.total(SyncAction.FAILED));
 
         return (ok && (continueOnError || counters.total(SyncAction.FAILED) == 0)) ? 0 : 1;
     }
@@ -158,7 +154,7 @@ public class Main implements Callable<Integer> {
         try {
             r.run();
         } catch (Exception e) {
-            log.error("step failed: {}", e.toString(), e);
+            log.errorf(e, "step failed: %s", e.toString());
             if (!continueOnError) throw e;
         }
     }

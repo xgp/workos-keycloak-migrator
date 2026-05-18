@@ -1,5 +1,6 @@
 package io.phasetwo.migration.legacy;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.phasetwo.migration.common.AttributeKeys;
@@ -21,14 +22,9 @@ import java.util.Map;
 import java.util.Optional;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /** keycloak-user-migration legacy-service implementation. */
+@JBossLog
 public class WorkOSLegacyResource {
-
-    private static final Logger log = LoggerFactory.getLogger(WorkOSLegacyResource.class);
-
     private final KeycloakSession session;
 
     public WorkOSLegacyResource(KeycloakSession session) {
@@ -113,7 +109,7 @@ public class WorkOSLegacyResource {
         try {
             ok = w.authenticatePassword(username, password, clientId, clientSecret);
         } catch (Exception e) {
-            log.debug("password verify error for {}: {}", username, e.toString());
+            log.debugf("password verify error for %s: %s", username, e.toString());
             ok = false;
         }
         return ok

@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.OrganizationResource;
 import io.phasetwo.client.openapi.model.OrganizationDomainRepresentation;
 import io.phasetwo.client.openapi.model.OrganizationRepresentation;
@@ -9,12 +10,8 @@ import io.phasetwo.migration.common.workos.model.WOrgDomain;
 import io.phasetwo.migration.common.workos.model.WOrganization;
 import java.time.Instant;
 import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+@JBossLog
 public class OrganizationSync implements EntitySync<WOrganization> {
-
-    private static final Logger log = LoggerFactory.getLogger(OrganizationSync.class);
     private static final String ENTITY = "organization";
 
     private final SyncContext ctx;
@@ -36,8 +33,7 @@ public class OrganizationSync implements EntitySync<WOrganization> {
             if (existing.isPresent()) {
                 String tagged = singleAttr(existing.get(), AttributeKeys.WORKOS_ID);
                 if (tagged != null && !tagged.equals(o.id())) {
-                    log.warn("conflict: PT org {} has workos.id={} but WorkOS supplied {}",
-                            existing.get().getId(), tagged, o.id());
+                    log.warnf("conflict: PT org %s has workos.id=%s but WorkOS supplied %s", existing.get().getId(), tagged, o.id());
                     return SyncResult.skipped(ENTITY, o.id(), "name_conflict_with_different_workos_id");
                 }
             }
@@ -100,7 +96,7 @@ public class OrganizationSync implements EntitySync<WOrganization> {
         try {
             ptDomains = org.domains().get();
         } catch (Exception e) {
-            log.warn("could not load PT domains for org {}: {}", ptOrgId, e.toString());
+            log.warnf("could not load PT domains for org %s: %s", ptOrgId, e.toString());
             return true;
         }
 
@@ -119,7 +115,7 @@ public class OrganizationSync implements EntitySync<WOrganization> {
                     // verify() call which kicks off DNS — fine in prod, may fail in lab.
                     org.domains().verify(wd.domain());
                 } catch (Exception e) {
-                    log.debug("verify() failed for {}/{}: {}", ptOrgId, wd.domain(), e.toString());
+                    log.debugf("verify() failed for %s/%s: %s", ptOrgId, wd.domain(), e.toString());
                     partial = true;
                 }
             }

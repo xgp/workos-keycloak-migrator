@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.OrganizationRolesResource;
 import io.phasetwo.client.openapi.model.OrganizationRepresentation;
 import io.phasetwo.client.openapi.model.OrganizationRoleRepresentation;
@@ -9,12 +10,8 @@ import io.phasetwo.migration.common.workos.model.WRole;
 import java.util.*;
 import org.keycloak.admin.client.resource.RoleResource;
 import org.keycloak.representations.idm.RoleRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+@JBossLog
 public class RoleSync implements EntitySync<WRole> {
-
-    private static final Logger log = LoggerFactory.getLogger(RoleSync.class);
     private static final String ENTITY = "role";
 
     private final SyncContext ctx;
@@ -95,7 +92,7 @@ public class RoleSync implements EntitySync<WRole> {
             existing = roles.get(r.slug());
         } catch (jakarta.ws.rs.NotFoundException ignored) {
         } catch (Exception e) {
-            log.debug("PT role get({}) failed: {}", r.slug(), e.toString());
+            log.debugf("PT role get(%s) failed: %s", r.slug(), e.toString());
         }
 
         OrganizationRoleRepresentation rep = existing != null ? existing : new OrganizationRoleRepresentation();

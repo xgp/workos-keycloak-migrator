@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.workos;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.phasetwo.migration.common.ratelimit.RateLimiter;
@@ -32,16 +33,12 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * OkHttp + Jackson backed {@link WorkOSClient}. Honours {@link RateLimiter} for every outbound
  * request and retries idempotent reads with exponential backoff on 429 / 5xx.
  */
+@JBossLog
 public class WorkOSHttpClient implements WorkOSClient {
-
-    private static final Logger log = LoggerFactory.getLogger(WorkOSHttpClient.class);
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
     private static final MediaType FORM = MediaType.get("application/x-www-form-urlencoded");
 
@@ -338,7 +335,7 @@ public class WorkOSHttpClient implements WorkOSClient {
                 if (retryAfter != null) {
                     try { wait = Math.max(wait, Long.parseLong(retryAfter) * 1000L); } catch (NumberFormatException ignored) {}
                 }
-                log.debug("retrying {} after {} ms (attempt {}, code {})", request.url(), wait, attempt, resp.code());
+                log.debugf("retrying %s after %s ms (attempt %s, code %s)", request.url(), wait, attempt, resp.code());
                 sleep(wait);
                 backoffMillis = Math.min(backoffMillis * 2, 5_000L);
                 continue;

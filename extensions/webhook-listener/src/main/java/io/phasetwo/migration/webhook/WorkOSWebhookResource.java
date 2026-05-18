@@ -1,5 +1,6 @@
 package io.phasetwo.migration.webhook;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.util.JsonUtil;
@@ -18,9 +19,6 @@ import java.util.List;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Receives WorkOS webhooks at {@code /realms/{realm}/workos-webhook/{publicId}}, verifies the
  * signature, and applies in-process mutations where it can. For events that require the full
@@ -29,10 +27,8 @@ import org.slf4j.LoggerFactory;
  * up via the cursor + state mechanism in {@code common}. This trade-off avoids dragging the
  * Keycloak admin client into the Keycloak server's own classpath.
  */
+@JBossLog
 public class WorkOSWebhookResource {
-
-    private static final Logger log = LoggerFactory.getLogger(WorkOSWebhookResource.class);
-
     static final String PENDING_RESYNC = AttributeKeys.MIGRATION_PREFIX + "pending_resync";
     static final String LAST_EVENT_AT = AttributeKeys.MIGRATION_PREFIX + "webhook.last_event_at";
 
@@ -57,17 +53,17 @@ public class WorkOSWebhookResource {
         if (realm == null) return Response.status(404).build();
         String expectedPublicId = realm.getAttribute(AttributeKeys.REALM_WEBHOOK_PUBLIC_ID);
         if (expectedPublicId == null || !expectedPublicId.equals(publicId)) {
-            log.debug("realm {}: unknown public webhook id {}", realm.getName(), publicId);
+            log.debugf("realm %s: unknown public webhook id %s", realm.getName(), publicId);
             return Response.status(404).build();
         }
         String secret = realm.getAttribute(AttributeKeys.REALM_WEBHOOK_SECRET);
         if (secret == null) {
-            log.warn("realm {}: webhook secret not configured", realm.getName());
+            log.warnf("realm %s: webhook secret not configured", realm.getName());
             return Response.status(503).build();
         }
         WebhookVerifier verifier = new WebhookVerifier(eventToleranceMillis);
         if (!verifier.verify(signature, body, secret)) {
-            log.warn("realm {}: rejecting webhook with bad signature", realm.getName());
+            log.warnf("realm %s: rejecting webhook with bad signature", realm.getName());
             return Response.status(401).build();
         }
 
@@ -76,7 +72,7 @@ public class WorkOSWebhookResource {
             JsonNode root = JsonUtil.mapper().readTree(body);
             event = JsonUtil.mapper().treeToValue(root, WebhookEvent.class);
         } catch (Exception e) {
-            log.warn("realm {}: malformed webhook body: {}", realm.getName(), e.toString());
+            log.warnf("realm %s: malformed webhook body: %s", realm.getName(), e.toString());
             return Response.status(400).build();
         }
 
@@ -85,7 +81,7 @@ public class WorkOSWebhookResource {
             dispatch(realm, event);
             return Response.ok("{\"ok\":true}", MediaType.APPLICATION_JSON).build();
         } catch (Exception e) {
-            log.error("realm {}: webhook dispatch failed: {}", realm.getName(), e.toString(), e);
+            log.errorf(e, "realm %s: webhook dispatch failed: %s", realm.getName(), e.toString());
             // 500 makes WorkOS retry the delivery.
             return Response.status(500).build();
         }
@@ -101,7 +97,7 @@ public class WorkOSWebhookResource {
                     handleUserUpsert(realm, data);
             case "dsync.user.deleted" -> handleUserDeleted(realm, data);
             case "organization_membership.deleted" -> handleMembershipDeleted(realm, data);
-            default -> log.info("realm {}: webhook {} accepted — marked for bulk resync", realm.getName(), type);
+            default -> log.infof("realm %s: webhook %s accepted — marked for bulk resync", realm.getName(), type);
         }
         markPendingResync(realm, type);
     }
@@ -112,7 +108,7 @@ public class WorkOSWebhookResource {
         UserModel u = findByWorkosId(realm, workosId);
         if (u != null) {
             session.users().removeUser(realm, u);
-            log.info("realm {}: removed user {} via webhook (workos id {})", realm.getName(), u.getUsername(), workosId);
+            log.infof("realm %s: removed user %s via webhook (workos id %s)", realm.getName(), u.getUsername(), workosId);
         }
     }
 
@@ -124,7 +120,7 @@ public class WorkOSWebhookResource {
         if (u == null) u = session.users().getUserByEmail(realm, email);
         if (u == null) {
             // Defer creation to the bulk migrator so org-/idp- linkage flows cleanly.
-            log.info("realm {}: webhook user.created/updated for {} deferred to next bulk run", realm.getName(), email);
+            log.infof("realm %s: webhook user.created/updated for %s deferred to next bulk run", realm.getName(), email);
             return;
         }
         u.setSingleAttribute(AttributeKeys.WORKOS_ID, workosId);
@@ -138,14 +134,13 @@ public class WorkOSWebhookResource {
         String externalId = textOr(data, "external_id");
         if (externalId != null) u.setSingleAttribute(AttributeKeys.WORKOS_EXTERNAL_ID, externalId);
         u.setSingleAttribute(AttributeKeys.WORKOS_LAST_SYNC_AT, Instant.now().toString());
-        log.info("realm {}: updated user {} via webhook (workos id {})", realm.getName(), email, workosId);
+        log.infof("realm %s: updated user %s via webhook (workos id %s)", realm.getName(), email, workosId);
     }
 
     private void handleMembershipDeleted(RealmModel realm, JsonNode data) {
         // Without the Phase Two admin client on the extension classpath we can't unlink an org
         // member here; defer to bulk reconcile.
-        log.info("realm {}: organization_membership.deleted deferred to next bulk run ({})",
-                realm.getName(), textOr(data, "id"));
+        log.infof("realm %s: organization_membership.deleted deferred to next bulk run (%s)", realm.getName(), textOr(data, "id"));
     }
 
     private void markPendingResync(RealmModel realm, String eventType) {

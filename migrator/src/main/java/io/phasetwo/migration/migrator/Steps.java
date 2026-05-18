@@ -1,5 +1,6 @@
 package io.phasetwo.migration.migrator;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.keycloak.Roles;
 import io.phasetwo.migration.common.state.Counters;
@@ -18,14 +19,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /** Step orchestration for the bulk runner. Each step is idempotent and cursor-driven. */
+@JBossLog
 public class Steps {
-
-    private static final Logger log = LoggerFactory.getLogger(Steps.class);
-
     private final SyncContext ctx;
     private final MigrationState state;
     private final Counters counters;
@@ -50,9 +46,9 @@ public class Steps {
             try {
                 SyncResult result = sync.sync(r);
                 counters.record(result);
-                log.info("{}", result);
+                log.infof("%s", result);
             } catch (Exception e) {
-                log.error("role sync failed for {}: {}", r.id(), e.toString());
+                log.errorf("role sync failed for %s: %s", r.id(), e.toString());
                 counters.record(SyncResult.failed("role", r.id(), e.toString()));
             }
             seen++;
@@ -66,10 +62,10 @@ public class Steps {
             try {
                 SyncResult r = sync.sync(o);
                 counters.record(r);
-                log.info("{}", r);
+                log.infof("%s", r);
             } catch (Exception e) {
                 counters.record(SyncResult.failed("organization", o.id(), e.toString()));
-                log.error("org sync failed: {}", e.toString());
+                log.errorf("org sync failed: %s", e.toString());
             }
         });
     }
@@ -84,10 +80,10 @@ public class Steps {
                 for (WRole r : roles) {
                     SyncResult result = sync.syncOrganizationRole(r, o.id());
                     counters.record(result);
-                    log.info("{}", result);
+                    log.infof("%s", result);
                 }
             } catch (Exception e) {
-                log.warn("listing org roles for {} failed: {}", o.id(), e.toString());
+                log.warnf("listing org roles for %s failed: %s", o.id(), e.toString());
             }
         });
     }
@@ -99,10 +95,10 @@ public class Steps {
             try {
                 SyncResult r = sync.sync(c);
                 counters.record(r);
-                log.info("{}", r);
+                log.infof("%s", r);
             } catch (Exception e) {
                 counters.record(SyncResult.failed("identity_provider", c.id(), e.toString()));
-                log.error("idp sync failed: {}", e.toString());
+                log.errorf("idp sync failed: %s", e.toString());
             }
         });
     }
@@ -114,10 +110,10 @@ public class Steps {
             try {
                 SyncResult r = sync.sync(d);
                 counters.record(r);
-                log.info("{}", r);
+                log.infof("%s", r);
             } catch (Exception e) {
                 counters.record(SyncResult.failed("directory", d.id(), e.toString()));
-                log.error("directory sync failed: {}", e.toString());
+                log.errorf("directory sync failed: %s", e.toString());
             }
         });
     }
@@ -135,17 +131,17 @@ public class Steps {
                 try {
                     page = ctx.workos().listDirectoryUsers(dir.id(), inner, pageSize);
                 } catch (Exception e) {
-                    log.warn("listing directory_users for {} failed: {}", dir.id(), e.toString());
+                    log.warnf("listing directory_users for %s failed: %s", dir.id(), e.toString());
                     return;
                 }
                 for (var du : page.data()) {
                     try {
                         SyncResult r = sync.sync(du);
                         counters.record(r);
-                        log.info("{}", r);
+                        log.infof("%s", r);
                     } catch (Exception e) {
                         counters.record(SyncResult.failed("directory_user", du.id(), e.toString()));
-                        log.error("directory_user sync failed: {}", e.toString());
+                        log.errorf("directory_user sync failed: %s", e.toString());
                     }
                 }
                 String next = page.listMetadata() == null ? null : page.listMetadata().after();
@@ -162,10 +158,10 @@ public class Steps {
             try {
                 SyncResult r = sync.sync(u);
                 counters.record(r);
-                log.info("{}", r);
+                log.infof("%s", r);
             } catch (Exception e) {
                 counters.record(SyncResult.failed("user", u.id(), e.toString()));
-                log.error("user sync failed: {}", e.toString());
+                log.errorf("user sync failed: %s", e.toString());
             }
         });
     }
@@ -181,17 +177,17 @@ public class Steps {
                 try {
                     page = ctx.workos().listOrganizationMemberships(org.id(), membershipCursor, pageSize);
                 } catch (Exception e) {
-                    log.warn("listing memberships for {} failed: {}", org.id(), e.toString());
+                    log.warnf("listing memberships for %s failed: %s", org.id(), e.toString());
                     return;
                 }
                 for (WOrgMembership m : page.data()) {
                     try {
                         SyncResult r = sync.sync(m);
                         counters.record(r);
-                        log.info("{}", r);
+                        log.infof("%s", r);
                     } catch (Exception e) {
                         counters.record(SyncResult.failed("organization_membership", m.id(), e.toString()));
-                        log.error("membership sync failed: {}", e.toString());
+                        log.errorf("membership sync failed: %s", e.toString());
                     }
                 }
                 String next = page.listMetadata() == null ? null : page.listMetadata().after();

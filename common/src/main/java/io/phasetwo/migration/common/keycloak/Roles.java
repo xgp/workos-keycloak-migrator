@@ -1,18 +1,14 @@
 package io.phasetwo.migration.common.keycloak;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.migration.common.AttributeKeys;
 import java.util.List;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /** Helpers for the realm-level roles the migrator manages. */
+@JBossLog
 public final class Roles {
-
-    private static final Logger log = LoggerFactory.getLogger(Roles.class);
-
     private Roles() {}
 
     /**
@@ -26,7 +22,7 @@ public final class Roles {
         } catch (jakarta.ws.rs.NotFoundException ignored) {
             // create below
         } catch (Exception e) {
-            log.debug("scim-managed lookup failed; attempting create: {}", e.toString());
+            log.debugf("scim-managed lookup failed; attempting create: %s", e.toString());
         }
         RoleRepresentation r = new RoleRepresentation();
         r.setName(AttributeKeys.SCIM_MANAGED_ROLE);
@@ -34,9 +30,9 @@ public final class Roles {
         r.setComposite(false);
         try {
             realm.roles().create(r);
-            log.info("created realm role {}", AttributeKeys.SCIM_MANAGED_ROLE);
+            log.infof("created realm role %s", AttributeKeys.SCIM_MANAGED_ROLE);
         } catch (Exception e) {
-            log.warn("could not create realm role {}: {}", AttributeKeys.SCIM_MANAGED_ROLE, e.toString());
+            log.warnf("could not create realm role %s: %s", AttributeKeys.SCIM_MANAGED_ROLE, e.toString());
         }
     }
 

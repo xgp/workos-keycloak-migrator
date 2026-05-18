@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.keycloak.Lookups;
 import io.phasetwo.migration.common.keycloak.Roles;
@@ -11,9 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Links a WorkOS {@link WDirectoryUser} (a SCIM-provisioned user) to its existing Keycloak user
  * record. The mapping path:
@@ -30,9 +28,8 @@ import org.slf4j.LoggerFactory;
  *       {@code scim.idp_id}, {@code scim.state}.
  * </ol>
  */
+@JBossLog
 public class DirectoryUserSync implements EntitySync<WDirectoryUser> {
-
-    private static final Logger log = LoggerFactory.getLogger(DirectoryUserSync.class);
     private static final String ENTITY = "directory_user";
 
     private final SyncContext ctx;

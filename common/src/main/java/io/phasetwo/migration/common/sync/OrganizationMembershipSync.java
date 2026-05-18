@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.OrganizationResource;
 import io.phasetwo.client.openapi.model.OrganizationRepresentation;
 import io.phasetwo.migration.common.keycloak.Lookups;
@@ -7,12 +8,8 @@ import io.phasetwo.migration.common.keycloak.Roles;
 import io.phasetwo.migration.common.workos.model.WOrgMembership;
 import java.util.Optional;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+@JBossLog
 public class OrganizationMembershipSync implements EntitySync<WOrgMembership> {
-
-    private static final Logger log = LoggerFactory.getLogger(OrganizationMembershipSync.class);
     private static final String ENTITY = "organization_membership";
 
     private final SyncContext ctx;
@@ -45,7 +42,7 @@ public class OrganizationMembershipSync implements EntitySync<WOrgMembership> {
         try {
             already = orgRes.memberships().isMember(user.get().getId());
         } catch (Exception e) {
-            log.debug("isMember check failed: {}", e.toString());
+            log.debugf("isMember check failed: %s", e.toString());
         }
         if (!already) {
             orgRes.memberships().add(user.get().getId());
@@ -69,7 +66,7 @@ public class OrganizationMembershipSync implements EntitySync<WOrgMembership> {
             try {
                 Roles.grantScimManaged(ctx.realm(), user.get().getId());
             } catch (Exception e) {
-                log.warn("grantScimManaged failed for user {}: {}", user.get().getId(), e.toString());
+                log.warnf("grantScimManaged failed for user %s: %s", user.get().getId(), e.toString());
             }
         }
 
@@ -82,7 +79,7 @@ public class OrganizationMembershipSync implements EntitySync<WOrgMembership> {
         try {
             orgRes.roles().grant(roleSlug, userId);
         } catch (Exception e) {
-            log.debug("grantRole({},{}) failed: {}", roleSlug, userId, e.toString());
+            log.debugf("grantRole(%s,%s) failed: %s", roleSlug, userId, e.toString());
         }
     }
 }

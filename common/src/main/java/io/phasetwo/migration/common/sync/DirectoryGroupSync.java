@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.client.openapi.model.OrganizationRepresentation;
 import io.phasetwo.migration.common.keycloak.Lookups;
 import io.phasetwo.migration.common.workos.model.WDirectoryGroup;
@@ -9,17 +10,13 @@ import java.util.List;
 import java.util.Optional;
 import org.keycloak.admin.client.resource.GroupsResource;
 import org.keycloak.representations.idm.GroupRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Materialises WorkOS Directory Groups as Keycloak groups under a per-organization parent
  * {@code /org-{pt_org_id}} — the parent name embeds the Phase Two organization id (not the
  * WorkOS id) so it stays stable for admins navigating the KC group tree alongside the PT org UI.
  */
+@JBossLog
 public class DirectoryGroupSync implements EntitySync<WDirectoryGroup> {
-
-    private static final Logger log = LoggerFactory.getLogger(DirectoryGroupSync.class);
     private static final String ENTITY = "directory_group";
 
     private final SyncContext ctx;
@@ -57,7 +54,7 @@ public class DirectoryGroupSync implements EntitySync<WDirectoryGroup> {
             if (code == 201) return SyncResult.created(ENTITY, g.id(), parentName + "/" + g.name());
             return SyncResult.failed(ENTITY, g.id(), "create returned " + code);
         } catch (Exception e) {
-            log.warn("subgroup create failed: {}", e.toString());
+            log.warnf("subgroup create failed: %s", e.toString());
             return SyncResult.failed(ENTITY, g.id(), e.toString());
         }
     }

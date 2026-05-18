@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.sync;
 
+import lombok.extern.jbosslog.JBossLog;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.keycloak.Lookups;
 import io.phasetwo.migration.common.util.Hashes;
@@ -13,12 +14,8 @@ import java.util.*;
 import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+@JBossLog
 public class UserSync implements EntitySync<WUser> {
-
-    private static final Logger log = LoggerFactory.getLogger(UserSync.class);
     private static final String ENTITY = "user";
 
     private final SyncContext ctx;
@@ -43,8 +40,7 @@ public class UserSync implements EntitySync<WUser> {
             UserRepresentation match = byEmail.get();
             String tagged = attr(match, AttributeKeys.WORKOS_ID);
             if (tagged != null && !tagged.isEmpty() && !tagged.equals(u.id())) {
-                log.warn("conflict: KC user {} carries workos.id={} but WorkOS supplied {}",
-                        match.getId(), tagged, u.id());
+                log.warnf("conflict: KC user %s carries workos.id=%s but WorkOS supplied %s", match.getId(), tagged, u.id());
                 return SyncResult.skipped(ENTITY, u.id(), "email_conflict_with_different_workos_id");
             }
         }
@@ -103,7 +99,7 @@ public class UserSync implements EntitySync<WUser> {
         try {
             identities = ctx.workos().listUserIdentities(u.id());
         } catch (Exception e) {
-            log.warn("could not load identities for {}: {}", u.id(), e.toString());
+            log.warnf("could not load identities for %s: %s", u.id(), e.toString());
             identities = List.of();
         }
         List<FederatedIdentityRepresentation> fis = new ArrayList<>();
@@ -163,7 +159,7 @@ public class UserSync implements EntitySync<WUser> {
         try {
             ctx.realm().identityProviders().create(rep).close();
         } catch (Exception e) {
-            log.debug("could not create stub idp {}: {}", alias, e.toString());
+            log.debugf("could not create stub idp %s: %s", alias, e.toString());
         }
     }
 

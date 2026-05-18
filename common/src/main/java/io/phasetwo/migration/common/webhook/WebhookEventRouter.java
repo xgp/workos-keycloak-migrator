@@ -1,5 +1,6 @@
 package io.phasetwo.migration.common.webhook;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.phasetwo.migration.common.sync.DirectoryGroupSync;
 import io.phasetwo.migration.common.sync.DirectorySync;
@@ -20,14 +21,9 @@ import io.phasetwo.migration.common.workos.model.WRole;
 import io.phasetwo.migration.common.workos.model.WUser;
 import io.phasetwo.migration.common.workos.model.WebhookEvent;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /** Dispatches a {@link WebhookEvent} to the matching synchroniser. */
+@JBossLog
 public class WebhookEventRouter {
-
-    private static final Logger log = LoggerFactory.getLogger(WebhookEventRouter.class);
-
     private final SyncContext ctx;
     private final String serverUrl;
 
@@ -40,7 +36,7 @@ public class WebhookEventRouter {
         if (ev == null || ev.event() == null) return Optional.empty();
         String type = ev.event();
         JsonNode data = ev.data();
-        log.debug("dispatching webhook event {} id={}", type, ev.id());
+        log.debugf("dispatching webhook event %s id=%s", type, ev.id());
         try {
             return switch (type) {
                 case "user.created", "user.updated" ->
@@ -80,7 +76,7 @@ public class WebhookEventRouter {
                 default -> Optional.empty();
             };
         } catch (Exception e) {
-            log.error("dispatch failed for {}: {}", type, e.toString());
+            log.errorf("dispatch failed for %s: %s", type, e.toString());
             throw e;
         }
     }

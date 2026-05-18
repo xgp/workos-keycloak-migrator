@@ -1,5 +1,6 @@
 package io.phasetwo.migration.webhook;
 
+import lombok.extern.jbosslog.JBossLog;
 import com.google.auto.service.AutoService;
 import io.phasetwo.migration.common.AttributeKeys;
 import io.phasetwo.migration.common.workos.WorkOSHttpClient;
@@ -15,14 +16,9 @@ import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @AutoService(RealmResourceProviderFactory.class)
+@JBossLog
 public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactory {
-
-    private static final Logger log = LoggerFactory.getLogger(WorkOSWebhookProviderFactory.class);
-
     static final String ID = "workos-webhook";
 
     /** Events the listener subscribes to in WorkOS. */
@@ -126,7 +122,7 @@ public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactor
                     try {
                         provisionRealm(realm);
                     } catch (Exception e) {
-                        log.warn("provision failed for realm {}: {}", realm.getName(), e.toString());
+                        log.warnf("provision failed for realm %s: %s", realm.getName(), e.toString());
                     }
                 });
                 s.getTransactionManager().commit();
@@ -134,7 +130,7 @@ public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactor
                 s.close();
             }
         } catch (Throwable t) {
-            log.error("workos-webhook provisioning errored: {}", t.toString());
+            log.errorf("workos-webhook provisioning errored: %s", t.toString());
         }
     }
 
@@ -154,14 +150,13 @@ public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactor
             if (frontend != null && !frontend.isBlank()) base = frontend.replaceAll("/+$", "");
         }
         if (base == null || base.isBlank()) {
-            log.warn("realm {}: no public base URL — set spi-realm-restapi-extension-workos-webhook-webhook-base-url or realm attribute frontendUrl", realm.getName());
+            log.warnf("realm %s: no public base URL — set spi-realm-restapi-extension-workos-webhook-webhook-base-url or realm attribute frontendUrl", realm.getName());
             return;
         }
         String endpointUrl = base + "/realms/" + realm.getName() + "/" + ID + "/" + publicId;
         if (!endpointUrl.startsWith("https://")) {
-            log.warn("realm {}: WorkOS requires an HTTPS endpoint; skipping provisioning (computed url: {}). "
-                    + "Set the realm attribute workos.migration.webhook.secret manually for local testing.",
-                    realm.getName(), endpointUrl);
+            log.warnf("realm %s: WorkOS requires an HTTPS endpoint; skipping provisioning (computed url: %s). "
+                    + "Set the realm attribute workos.migration.webhook.secret manually for local testing.", realm.getName(), endpointUrl);
             return;
         }
 
@@ -173,16 +168,16 @@ public class WorkOSWebhookProviderFactory implements RealmResourceProviderFactor
                 if (ep.secret() != null) realm.setAttribute(AttributeKeys.REALM_WEBHOOK_SECRET, ep.secret());
                 if (!new HashSet<>(ep.events()).equals(new HashSet<>(SUBSCRIBED_EVENTS))) {
                     w.updateWebhookEndpoint(ep.id(), SUBSCRIBED_EVENTS);
-                    log.info("realm {}: updated WorkOS webhook events", realm.getName());
+                    log.infof("realm %s: updated WorkOS webhook events", realm.getName());
                 }
-                log.info("realm {}: reusing WorkOS webhook {}", realm.getName(), ep.id());
+                log.infof("realm %s: reusing WorkOS webhook %s", realm.getName(), ep.id());
                 return;
             }
         }
         WWebhookEndpoint created = w.createWebhookEndpoint(endpointUrl, SUBSCRIBED_EVENTS);
         realm.setAttribute(AttributeKeys.REALM_WEBHOOK_ENDPOINT_ID, created.id());
         if (created.secret() != null) realm.setAttribute(AttributeKeys.REALM_WEBHOOK_SECRET, created.secret());
-        log.info("realm {}: created WorkOS webhook {} at {}", realm.getName(), created.id(), endpointUrl);
+        log.infof("realm %s: created WorkOS webhook %s at %s", realm.getName(), created.id(), endpointUrl);
     }
 
     @Override
