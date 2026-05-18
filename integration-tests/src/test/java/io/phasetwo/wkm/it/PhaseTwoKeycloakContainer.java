@@ -1,9 +1,14 @@
 package io.phasetwo.wkm.it;
 
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 
@@ -34,11 +39,28 @@ public class PhaseTwoKeycloakContainer extends GenericContainer<PhaseTwoKeycloak
         withCommand("start-dev", "--features=organization");
         // KC 26 exposes /health/ready on the management port (9000), not the user-facing 8080.
         waitingFor(Wait.forHttp("/health/ready").forPort(9000).withStartupTimeout(Duration.ofMinutes(3)));
+        withLogConsumer(new Slf4jLogConsumer(LoggerFactory.getLogger("kc-container")));
     }
 
-    /** Mount a directory of provider JARs into {@code /opt/keycloak/providers}. */
+    /**
+     * Copy every JAR in {@code dir} into {@code /opt/keycloak/providers/} on the container
+     * <em>alongside</em> the image's pre-installed providers (a directory bind-mount would shadow
+     * them and Keycloak would fail to start).
+     */
     public PhaseTwoKeycloakContainer withProvidersDir(Path dir) {
-        addFileSystemBind(dir.toAbsolutePath().toString(), "/opt/keycloak/providers", BindMode.READ_ONLY);
+        if (!Files.isDirectory(dir)) {
+            throw new IllegalArgumentException("providers dir does not exist: " + dir.toAbsolutePath());
+        }
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir, "*.jar")) {
+            for (Path jar : stream) {
+                addFileSystemBind(
+                        jar.toAbsolutePath().toString(),
+                        "/opt/keycloak/providers/" + jar.getFileName().toString(),
+                        BindMode.READ_ONLY);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("failed to enumerate providers dir " + dir, e);
+        }
         return self();
     }
 

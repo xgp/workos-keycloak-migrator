@@ -1,0 +1,21 @@
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "user",
+      "id": "user_TEST_alice",
+      "email": "alice@acme.example.com",
+      "email_verified": true,
+      "first_name": "Alice",
+      "last_name": "Anderson",
+      "profile_picture_url": null,
+      "external_id": "ext_alice",
+      "locale": "en-US",
+      "last_sign_in_at": "2026-01-10T12:00:00.000Z",
+      "created_at": "2026-01-01T00:00:00.000Z",
+      "updated_at": "2026-01-01T00:00:00.000Z",
+      "metadata": {"timezone": "America/New_York"}
+    }
+  ],
+  "list_metadata": {"before": null, "after": null}
+}

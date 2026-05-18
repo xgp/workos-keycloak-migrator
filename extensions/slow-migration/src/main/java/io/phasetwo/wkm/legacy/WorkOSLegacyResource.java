@@ -91,6 +91,7 @@ public class WorkOSLegacyResource {
     @POST
     @Path("{username}")
     @Consumes(MediaType.APPLICATION_JSON)
+    @jakarta.ws.rs.Produces(MediaType.APPLICATION_JSON)
     public Response verifyPassword(
             @PathParam("username") String username,
             @HeaderParam("Authorization") String authorization,
@@ -115,7 +116,9 @@ public class WorkOSLegacyResource {
             log.debug("password verify error for {}: {}", username, e.toString());
             ok = false;
         }
-        return ok ? Response.ok().build() : Response.status(401).build();
+        return ok
+                ? Response.ok("{\"ok\":true}", MediaType.APPLICATION_JSON).build()
+                : Response.status(401).build();
     }
 
     private static ArrayNode arr(String v) {
