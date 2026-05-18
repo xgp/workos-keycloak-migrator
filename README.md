@@ -20,6 +20,25 @@ See `IMPLEMENTATION.md` for the full design contract and `SPEC.md` for the origi
 mvn -DskipTests package
 ```
 
+### Code formatting
+
+The project uses [Google Java Format](https://github.com/google/google-java-format) via
+`com.spotify.fmt:fmt-maven-plugin:2.29`. Run it manually with:
+
+```
+mvn fmt:format     # rewrite files in place
+mvn fmt:check      # fail if anything is mis-formatted (good for CI)
+```
+
+A versioned pre-commit hook in `.githooks/pre-commit` runs `mvn fmt:format` whenever any
+Java file is staged, then re-stages the rewritten files. Enable it once per clone with:
+
+```
+git config core.hooksPath .githooks
+```
+
+(Use `git commit --no-verify` to bypass for hot-fix scenarios.)
+
 Outputs:
 - `migrator/target/workos-keycloak-migrator.jar`
 - `extensions/webhook-listener/target/workos-webhook-listener.jar`

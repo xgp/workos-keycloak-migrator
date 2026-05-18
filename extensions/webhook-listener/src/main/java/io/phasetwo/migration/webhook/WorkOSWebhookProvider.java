@@ -5,19 +5,19 @@ import org.keycloak.services.resource.RealmResourceProvider;
 
 public class WorkOSWebhookProvider implements RealmResourceProvider {
 
-    private final KeycloakSession session;
-    private final long eventToleranceMillis;
+  private final KeycloakSession session;
+  private final long eventToleranceMillis;
 
-    public WorkOSWebhookProvider(KeycloakSession session, long eventToleranceMillis) {
-        this.session = session;
-        this.eventToleranceMillis = eventToleranceMillis;
-    }
+  public WorkOSWebhookProvider(KeycloakSession session, long eventToleranceMillis) {
+    this.session = session;
+    this.eventToleranceMillis = eventToleranceMillis;
+  }
 
-    @Override
-    public Object getResource() {
-        return new WorkOSWebhookResource(session, eventToleranceMillis);
-    }
+  @Override
+  public Object getResource() {
+    return new WorkOSWebhookResource(session, eventToleranceMillis);
+  }
 
-    @Override
-    public void close() {}
+  @Override
+  public void close() {}
 }

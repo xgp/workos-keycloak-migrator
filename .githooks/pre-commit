@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Pre-commit hook: run Google Java Format (mvn fmt:format) on the source tree
+# whenever Java files are staged, then re-stage the (possibly-rewritten) files.
+#
+# Enable with:
+#     git config core.hooksPath .githooks
+#
+# Skip with:
+#     git commit --no-verify
+
+set -e
+
+staged_java=$(git diff --cached --name-only --diff-filter=ACMR -- '*.java')
+if [ -z "$staged_java" ]; then
+    exit 0
+fi
+
+# Reject any unstaged changes to those same files; otherwise fmt would silently
+# stage the dev's WIP work along with the formatted version.
+unstaged_overlap=$(
+    git diff --name-only -- '*.java' \
+        | awk 'NR==FNR{s[$0]=1; next} ($0 in s){print}' <(printf '%s\n' "$staged_java") -
+)
+if [ -n "$unstaged_overlap" ]; then
+    echo "pre-commit: refusing to run mvn fmt:format because these files have unstaged changes:" >&2
+    printf '  %s\n' $unstaged_overlap >&2
+    echo "Stage or stash them first, then re-commit." >&2
+    exit 1
+fi
+
+echo "pre-commit: running mvn fmt:format"
+if ! mvn -q fmt:format >/tmp/wkm-fmt.log 2>&1; then
+    echo "pre-commit: mvn fmt:format failed:" >&2
+    cat /tmp/wkm-fmt.log >&2
+    exit 1
+fi
+
+# Re-stage anything fmt rewrote that we had staged.
+echo "$staged_java" | xargs -r git add --

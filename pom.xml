@@ -53,6 +53,7 @@
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-dependency-plugin.version>3.7.1</maven-dependency-plugin.version>
         <maven-failsafe-plugin.version>3.2.5</maven-failsafe-plugin.version>
+        <fmt-maven-plugin.version>2.29</fmt-maven-plugin.version>
     </properties>
 
     <dependencyManagement>
@@ -264,7 +265,21 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>${maven-failsafe-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>com.spotify.fmt</groupId>
+                    <artifactId>fmt-maven-plugin</artifactId>
+                    <version>${fmt-maven-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
+
+        <plugins>
+            <!-- Google Java Format. Invoke with `mvn fmt:format` to rewrite files in place, or
+                 `mvn fmt:check` to fail the build when something is mis-formatted (CI gate). -->
+            <plugin>
+                <groupId>com.spotify.fmt</groupId>
+                <artifactId>fmt-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 </project>

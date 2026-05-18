@@ -6,20 +6,19 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WOrgMembership(
-        @JsonProperty("id") String id,
-        @JsonProperty("user_id") String userId,
-        @JsonProperty("organization_id") String organizationId,
-        @JsonProperty("status") String status,
-        @JsonProperty("directory_managed") Boolean directoryManaged,
-        @JsonProperty("role") Role role,
-        @JsonProperty("role_assignments") List<RoleAssignment> roleAssignments,
-        @JsonProperty("created_at") String createdAt,
-        @JsonProperty("updated_at") String updatedAt) {
+    @JsonProperty("id") String id,
+    @JsonProperty("user_id") String userId,
+    @JsonProperty("organization_id") String organizationId,
+    @JsonProperty("status") String status,
+    @JsonProperty("directory_managed") Boolean directoryManaged,
+    @JsonProperty("role") Role role,
+    @JsonProperty("role_assignments") List<RoleAssignment> roleAssignments,
+    @JsonProperty("created_at") String createdAt,
+    @JsonProperty("updated_at") String updatedAt) {
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Role(@JsonProperty("slug") String slug) {}
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record Role(@JsonProperty("slug") String slug) {}
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public record RoleAssignment(
-            @JsonProperty("id") String id, @JsonProperty("role") Role role) {}
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public record RoleAssignment(@JsonProperty("id") String id, @JsonProperty("role") Role role) {}
 }

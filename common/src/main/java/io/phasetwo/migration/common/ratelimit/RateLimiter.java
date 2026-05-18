@@ -21,51 +21,46 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class RateLimiter {
 
-    private final Bucket global;
-    private final Map<String, Bucket> perKey = new ConcurrentHashMap<>();
+  private final Bucket global;
+  private final Map<String, Bucket> perKey = new ConcurrentHashMap<>();
 
-    public RateLimiter() {
-        this(
-                Bandwidth.builder()
-                        .capacity(6000)
-                        .refillGreedy(6000, Duration.ofSeconds(60))
-                        .build());
-    }
+  public RateLimiter() {
+    this(Bandwidth.builder().capacity(6000).refillGreedy(6000, Duration.ofSeconds(60)).build());
+  }
 
-    RateLimiter(Bandwidth global) {
-        this.global = Bucket.builder().addLimit(global).build();
-    }
+  RateLimiter(Bandwidth global) {
+    this.global = Bucket.builder().addLimit(global).build();
+  }
 
-    public void acquire() {
-        try {
-            global.asBlocking().consume(1);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
+  public void acquire() {
+    try {
+      global.asBlocking().consume(1);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
     }
+  }
 
-    public void acquire(String bucketKey, Bandwidth limit) {
-        Bucket b =
-                perKey.computeIfAbsent(bucketKey, k -> Bucket.builder().addLimit(limit).build());
-        try {
-            b.asBlocking().consume(1);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-        acquire();
+  public void acquire(String bucketKey, Bandwidth limit) {
+    Bucket b = perKey.computeIfAbsent(bucketKey, k -> Bucket.builder().addLimit(limit).build());
+    try {
+      b.asBlocking().consume(1);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new RuntimeException(e);
     }
+    acquire();
+  }
 
-    public static Bandwidth directoryUsersLimit() {
-        return Bandwidth.builder().capacity(4).refillGreedy(4, Duration.ofSeconds(1)).build();
-    }
+  public static Bandwidth directoryUsersLimit() {
+    return Bandwidth.builder().capacity(4).refillGreedy(4, Duration.ofSeconds(1)).build();
+  }
 
-    public static Bandwidth organizationDeleteLimit() {
-        return Bandwidth.builder().capacity(50).refillGreedy(50, Duration.ofSeconds(60)).build();
-    }
+  public static Bandwidth organizationDeleteLimit() {
+    return Bandwidth.builder().capacity(50).refillGreedy(50, Duration.ofSeconds(60)).build();
+  }
 
-    public static Bandwidth authKitAuthenticateLimit() {
-        return Bandwidth.builder().capacity(10).refillGreedy(10, Duration.ofSeconds(60)).build();
-    }
+  public static Bandwidth authKitAuthenticateLimit() {
+    return Bandwidth.builder().capacity(10).refillGreedy(10, Duration.ofSeconds(60)).build();
+  }
 }

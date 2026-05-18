@@ -5,6 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WIdentity(
-        @JsonProperty("idp_id") String idpId,
-        @JsonProperty("type") String type,
-        @JsonProperty("provider") String provider) {}
+    @JsonProperty("idp_id") String idpId,
+    @JsonProperty("type") String type,
+    @JsonProperty("provider") String provider) {}

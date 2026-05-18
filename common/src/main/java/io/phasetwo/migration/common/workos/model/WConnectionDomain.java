@@ -5,4 +5,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WConnectionDomain(
-        @JsonProperty("id") String id, @JsonProperty("domain") String domain) {}
+    @JsonProperty("id") String id, @JsonProperty("domain") String domain) {}

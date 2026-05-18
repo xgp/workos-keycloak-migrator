@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 /** WorkOS webhook envelope. */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record WebhookEvent(
-        @JsonProperty("id") String id,
-        @JsonProperty("event") String event,
-        @JsonProperty("data") JsonNode data,
-        @JsonProperty("created_at") String createdAt) {}
+    @JsonProperty("id") String id,
+    @JsonProperty("event") String event,
+    @JsonProperty("data") JsonNode data,
+    @JsonProperty("created_at") String createdAt) {}
