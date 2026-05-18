@@ -1,5 +1,7 @@
 # WorkOS → Keycloak Migrator
 
+> :rocket: **Try it for free** in the new Phase Two [Keycloak managed service](https://phasetwo.io/?utm_source=github&utm_medium=readme&utm_campaign=workos-keycloak-migrator). Go to [Phase Two](https://phasetwo.io/) for more information.
+
 Three-component project that migrates an identity system from WorkOS into Keycloak (with Phase Two's
 organizations & webhooks extensions installed). 
 
