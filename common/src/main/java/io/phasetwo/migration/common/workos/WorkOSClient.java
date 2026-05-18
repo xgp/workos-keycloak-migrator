@@ -29,6 +29,7 @@ public interface WorkOSClient {
 
     // Memberships
     Page<WOrgMembership> listOrganizationMemberships(String organizationId, Cursor cursor, int limit);
+    Page<WOrgMembership> listOrganizationMembershipsForUser(String userId, Cursor cursor, int limit);
     Optional<WOrgMembership> getOrganizationMembership(String id);
 
     // Roles

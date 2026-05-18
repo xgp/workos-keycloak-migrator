@@ -28,6 +28,7 @@
         <keycloak.version>26.5.7</keycloak.version>
         <keycloak-admin-client.version>26.0.9</keycloak-admin-client.version>
         <phasetwo-client.version>0.1.15</phasetwo-client.version>
+        <keycloak-orgs.version>0.152</keycloak-orgs.version>
 
         <jackson.version>2.17.2</jackson.version>
         <okhttp.version>4.12.0</okhttp.version>
@@ -97,6 +98,12 @@
                 <groupId>io.phasetwo</groupId>
                 <artifactId>phasetwo-admin-client</artifactId>
                 <version>${phasetwo-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.phasetwo.keycloak</groupId>
+                <artifactId>keycloak-orgs</artifactId>
+                <version>${keycloak-orgs.version}</version>
+                <scope>provided</scope>
             </dependency>
 
             <dependency>

@@ -121,6 +121,16 @@ public class WorkOSHttpClient implements WorkOSClient {
     }
 
     @Override
+    public Page<WOrgMembership> listOrganizationMembershipsForUser(String userId, Cursor cursor, int limit) {
+        HttpUrl.Builder b = httpUrl("/user_management/organization_memberships").newBuilder()
+                .addQueryParameter("user_id", userId)
+                .addQueryParameter("limit", Integer.toString(limit > 0 ? limit : defaultPageSize));
+        if (cursor != null && cursor.after() != null) b.addQueryParameter("after", cursor.after());
+        if (cursor != null && cursor.before() != null) b.addQueryParameter("before", cursor.before());
+        return doGet(b.build(), new TypeReference<>() {});
+    }
+
+    @Override
     public Optional<WOrgMembership> getOrganizationMembership(String id) {
         return getOptional(
                 "/user_management/organization_memberships/" + id, WOrgMembership.class);

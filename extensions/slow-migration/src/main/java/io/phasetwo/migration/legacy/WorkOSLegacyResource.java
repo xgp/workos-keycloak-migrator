@@ -81,7 +81,22 @@ public class WorkOSLegacyResource {
         out.set("requiredActions", JsonUtil.mapper().createArrayNode());
         // Per SPEC: omit "organizations" (refers to native KC orgs, not Phase Two)
 
+        // Schedule a full sync of the user (attributes, federated identities, org memberships
+        // and roles, scim-managed tagging) to run after the request transaction commits — by
+        // that time Keycloak's user-federation provider has imported the local user record so
+        // we have something to enrich.
+        scheduleAfterCommitEnrich(realm, u.email());
+
         return Response.ok(out).build();
+    }
+
+    private void scheduleAfterCommitEnrich(RealmModel realm, String email) {
+        String apiKey = realm.getAttribute("workos.migration.api_key");
+        if (apiKey == null) return;
+        String apiBase = Optional.ofNullable(realm.getAttribute("workos.migration.api_base_url"))
+                .orElse("https://api.workos.com");
+        EnrichUserTransaction tx = new EnrichUserTransaction(session, realm.getName(), email, apiBase, apiKey);
+        session.getTransactionManager().enlistAfterCompletion(tx);
     }
 
     @POST
