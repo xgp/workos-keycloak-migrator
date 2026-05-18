@@ -14,6 +14,67 @@ organizations & webhooks extensions installed). Maven group `io.phasetwo.migrati
 
 See `IMPLEMENTATION.md` for the full design contract and `SPEC.md` for the original brief.
 
+## How to use
+
+1. **Build the artifacts.**
+
+   ```
+   mvn -DskipTests package
+   ```
+
+   Produces `migrator/target/workos-keycloak-migrator.jar` (fat jar) plus
+   `extensions/{webhook-listener,slow-migration}/target/*.jar` for Keycloak.
+
+2. **Stand up Keycloak with the Phase Two extensions installed.** Either reuse an existing
+   Phase Two-enabled Keycloak or bring up the bundled local stack:
+
+   ```
+   docker compose up -d
+   ```
+
+   The compose file mounts both extension jars into `/opt/keycloak/providers/`. If you want
+   the slow-migration flow too, drop the `keycloak-rest-provider-6.2.1.jar` from
+   `https://github.com/daniel-frak/keycloak-user-migration/releases` into
+   `extensions/lib/` before `docker compose up`.
+
+3. **Create the target realm + a service-account client.**
+
+   ```
+   ./scripts/bootstrap-realm.sh
+   ```
+
+   Creates the `migrate-target` realm (with `sslRequired=NONE` and
+   `unmanagedAttributePolicy=ENABLED`), provisions a `migrator-cli` service-account client
+   with `realm-admin`, and prints the credentials.
+
+4. **Run the bulk migrator.**
+
+   ```
+   java -jar migrator/target/workos-keycloak-migrator.jar \
+     --workos-api-key=$WORKOS_API_KEY \
+     --keycloak-url=http://localhost:8080 \
+     --keycloak-realm=migrate-target \
+     --keycloak-client-id=migrator-cli \
+     --keycloak-client-secret=$KC_CLIENT_SECRET \
+     --source-label=sandbox
+   ```
+
+   The runner is idempotent — re-running picks up where the last run left off (cursors are
+   persisted as realm attributes) and reports `SKIPPED reason=unchanged` for entities that
+   haven't drifted.
+
+5. **(Optional) Enable live syncing via the extensions.** Both are opt-in per realm so set
+   `KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_WEBHOOK_REALMS=migrate-target` and
+   `KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_REALMS=migrate-target` (or `*` for all),
+   then restart Keycloak. The webhook listener auto-registers a WorkOS webhook endpoint
+   pointing at `${KC_HOSTNAME_URL}/realms/{realm}/workos-webhook/{publicId}`, and the
+   slow-migration extension installs the `keycloak-rest-provider` federation component
+   so passwords get verified against WorkOS on first login.
+
+6. **Re-run the bulk migrator** whenever you want a full reconciliation (e.g. after WorkOS
+   admins make changes that the webhook listener didn't catch). The same command from step
+   4 — no flags needed for the happy path.
+
 ## Build
 
 ```
