@@ -51,7 +51,7 @@ Two separate extension jars (one per `### ...extension` heading in SPEC) — bot
 | Module | Packaging | Notes |
 | --- | --- | --- |
 | `common` | jar | depends on Keycloak `server-spi-private` as `provided`, WorkOS SDK, Phase Two client, HTTP/Jackson. |
-| `migrator` | jar (fat via `maven-shade-plugin`) | main class `io.phasetwo.wkm.migrator.Main`; service files for picocli & SLF4J relocated; `Multi-Release` manifest entry. |
+| `migrator` | jar (fat via `maven-shade-plugin`) | main class `io.phasetwo.migration.migrator.Main`; service files for picocli & SLF4J relocated; `Multi-Release` manifest entry. |
 | `extensions/webhook-listener` | jar | uses `provided` Keycloak deps; shades only non-Keycloak runtime deps (Jackson is already on Keycloak’s classpath, so we rely on it; bucket4j shaded). |
 | `extensions/slow-migration` | jar | same model. |
 
@@ -64,7 +64,7 @@ All entity mapping logic lives here so it is reused by the migrator and both ext
 ### 2.1 Packages
 
 ```
-io.phasetwo.wkm.common
+io.phasetwo.migration.common
 ├── workos/                 WorkOS client facade
 │   ├── WorkOSClient         (interface)
 │   ├── WorkOSSdkClient      (impl wrapping com.workos.WorkOS Kotlin SDK)

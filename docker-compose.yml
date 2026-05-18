@@ -32,9 +32,12 @@ services:
       KC_HOSTNAME_URL: http://localhost:8080
       KC_HEALTH_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
-      # Extension config — override at compose-up time as needed
+      # Extension config — override at compose-up time as needed.
+      # `realms` is opt-in: defaults to none. Set to a comma-separated allowlist or `*` for all.
+      KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_WEBHOOK_REALMS: "${WORKOS_MIGRATION_REALMS:-migrate-target}"
       KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_WEBHOOK_API_KEY: "${WORKOS_API_KEY:-}"
       KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_WEBHOOK_WEBHOOK_BASE_URL: "${WORKOS_WEBHOOK_BASE_URL:-http://localhost:8080}"
+      KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_REALMS: "${WORKOS_MIGRATION_REALMS:-migrate-target}"
       KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_API_KEY: "${WORKOS_API_KEY:-}"
       KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_CLIENT_ID: "${WORKOS_CLIENT_ID:-}"
       KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_CLIENT_SECRET: "${WORKOS_CLIENT_SECRET:-}"

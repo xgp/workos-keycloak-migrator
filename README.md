@@ -1,7 +1,8 @@
 # WorkOS → Keycloak Migrator
 
 Three-component project that migrates an identity system from WorkOS into Keycloak (with Phase Two's
-organizations & webhooks extensions installed):
+organizations & webhooks extensions installed). Maven group `io.phasetwo.migration`, Java package
+`io.phasetwo.migration.*`.
 
 | Module | Artifact | Role |
 | --- | --- | --- |
@@ -9,6 +10,7 @@ organizations & webhooks extensions installed):
 | `migrator/` | `workos-keycloak-migrator.jar` (fat) | Standalone bulk runner |
 | `extensions/webhook-listener/` | `workos-webhook-listener.jar` | Keycloak `RealmResourceProvider` at `/realms/{realm}/workos-webhook/{publicId}` |
 | `extensions/slow-migration/` | `workos-slow-migration.jar` | `RealmResourceProvider` at `/realms/{realm}/workos-legacy/{username}` for `keycloak-user-migration` |
+| `integration-tests/` | (test-only) | Failsafe IT module that drives the migrator + both extensions against a live phasetwo-keycloak container |
 
 See `IMPLEMENTATION.md` for the full design contract and `SPEC.md` for the original brief.
 
@@ -60,7 +62,7 @@ two extensions mounted as providers.
 ## Attribute & realm-state conventions
 
 All written keys are prefixed `workos.`. The canonical list is in
-`io.phasetwo.wkm.common.AttributeKeys`. Notable entries:
+`io.phasetwo.migration.common.AttributeKeys`. Notable entries:
 
 - `workos.id` (user / org / role): WorkOS source-of-truth id; primary idempotency key.
 - `workos.source`: short label for the WorkOS environment (`sandbox`, `demo`, or a fingerprint).
@@ -94,9 +96,119 @@ All written keys are prefixed `workos.`. The canonical list is in
   contract. Run the bulk migrator with the federation component disabled if you want fully
   eager local user creation.
 
+## Extension configuration
+
+Both Keycloak extensions read configuration via Keycloak's standard SPI mechanism:
+`KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_WEBHOOK_<KEY>` for the webhook listener and
+`KC_SPI_REALM_RESTAPI_EXTENSION_WORKOS_LEGACY_<KEY>` for the slow-migration extension. Both
+honour the same `realms` opt-in:
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `realms` | _(empty)_ | **No realms** are touched by `postInit`. Operators opt in. |
+| `realms=*` | | Every realm is provisioned at startup (legacy/wildcard behaviour). |
+| `realms=foo,bar` | | Only `foo` and `bar` are provisioned. |
+
+If `realms` is unset/empty the extension still serves HTTP traffic at its REST path; the only
+thing it skips is the auto-provisioning step that registers a WorkOS webhook endpoint (for the
+listener) or installs the `keycloak-rest-provider` component (for the legacy extension). The
+default was switched to opt-in so a one-shot `docker compose up` doesn't accidentally fan out
+across every realm in a shared Keycloak — operators must name the realms they actually want
+migrated.
+
+The `docker-compose.yml` wires the variable through `${WORKOS_MIGRATION_REALMS:-migrate-target}`
+so the bootstrap script's realm name is the default opt-in.
+
+## SCIM directory users
+
+WorkOS marks users created through a Directory Sync (SCIM) connection by attaching them to an
+`OrganizationMembership` with `directory_managed=true`, and by listing them at
+`/directory_users`. The migrator surfaces this in Keycloak in two ways:
+
+- The realm role `scim-managed` is created on the first run (idempotent) and granted to any
+  user who shows up as a directory user. Filter for that role in the Keycloak admin UI to see
+  every user that originated from SCIM.
+- The user gains the attributes `scim.directory_id`, `scim.directory_user_id`,
+  `scim.idp_id`, and `scim.state` linking back to the WorkOS records.
+
+The tagging happens through three paths so each entry point converges on the same shape:
+
+1. The new bulk step `directory_users` (run by default; selectable via `--entities=…`) pages
+   every WorkOS directory and tags its users.
+2. The existing `memberships` step flips the role on whenever it sees
+   `directory_managed=true`.
+3. The webhook listener's `dsync.user.created` / `dsync.user.updated` events route to the same
+   `DirectoryUserSync`, so live updates apply the tag without waiting for a bulk run.
+
 ## Testing
 
 - `mvn test` — unit tests for the webhook verifier, rate limiter, JSON mappings, and the IdP
-  provider-id mapper. No Docker required.
-- A fuller integration test would require Testcontainers + a published phasetwo-keycloak image; the
-  docker-compose workflow above is a more reliable manual check.
+  provider-id mapper. No Docker required (~30 tests, < 5 s).
+- `mvn -Pit verify` — runs the unit suite plus the integration-test module. Requires a
+  reachable Docker host; pulls `quay.io/phasetwo/phasetwo-keycloak:26.5.7` on first run.
+
+### Integration tests
+
+The IT module lives at `integration-tests/` and is gated behind the `-Pit` Maven profile so
+`mvn test` stays fast and Docker-free. It contains three test classes:
+
+#### `BulkMigratorIT`
+
+Boots a phasetwo-keycloak container, points an in-JVM WireMock at the migrator's
+`--workos-base-url`, then drives the CLI in two ordered methods that share one container.
+
+- `happyPath_imports_workos_state` — runs the migrator against the canned fixture set
+  (3 organisations, 3 users, 2 environment roles, 2 SAML/OIDC connections) and asserts:
+  - The per-entity action counts (`CREATED` for users / orgs / roles, `PARTIAL` for the SAML
+    stubs) as captured by a logback `ListAppender`.
+  - The realm's admin REST state — a known user carries every `workos.*` attribute including
+    `workos.id`, `workos.external_id`, `workos.metadata.timezone`, and `workos.sync_hash`.
+  - The realm-scoped tracking attributes (`workos.migration.last_run_at`,
+    `client_fingerprint`, `last_run_status=OK`).
+- `idempotency_rerun_is_noop_for_users` — re-runs the migrator with everything already in
+  place; asserts every user line in the captured log returns
+  `SKIPPED reason=unchanged`, with zero further `CREATED` user lines.
+
+#### `WebhookListenerIT`
+
+Mounts the `workos-webhook-listener.jar` into `/opt/keycloak/providers/`, seeds the realm with
+a known `webhook.public_id` and HMAC `secret`, then drives the resource over HTTP:
+
+- `validSignature_returns_200` — signs a `user.updated` payload with the seeded secret; asserts
+  200 and that the in-process `KeycloakSession` mutated the targeted user's last name.
+- `badSignature_returns_401` — tampered signature is rejected without side effects.
+- `missingSignature_returns_401` — missing header is rejected.
+- `unknownPublicId_returns_404` — a mismatched `publicId` on a real realm returns 404
+  (validates the per-realm UUID gate).
+- `userDeleted_removes_user` — a signed `user.deleted` event removes the user from the realm.
+
+#### `SlowMigrationIT`
+
+Mounts `workos-slow-migration.jar`, exposes the WireMock host port to Testcontainers *before*
+starting Keycloak (so `host.testcontainers.internal` is routable from inside the container),
+then drives the `keycloak-user-migration` legacy-service contract:
+
+- `federationComponent_can_be_installed_with_upstream_provider_id` — installs a
+  `ComponentModel` with `providerId="User migration using a REST client"` and asserts it
+  resolves; confirms our extension lines up with the upstream
+  `keycloak-rest-provider:6.2.1` that the phasetwo image ships.
+- `getKnownUser_returns_200_with_workos_shape` — `GET /workos-legacy/alice@…` with a valid
+  bearer returns 200, the JSON body has the `username` / `email` / `emailVerified` /
+  `attributes.workos.id` fields, and the `organizations[]` field is omitted (per spec).
+- `getUnknownUser_returns_404` — WireMock returns an empty list; the resource maps that to 404.
+- `missingBearer_returns_401` / `wrongBearer_returns_401` — bearer-token authentication is
+  enforced.
+- `postCorrectPassword_returns_200` / `postWrongPassword_returns_401` — WireMock stubs the
+  WorkOS `/user_management/authenticate` endpoint with 200 / 401 and the resource passes the
+  status through.
+
+#### Running locally
+
+```
+mvn -Pit verify
+```
+
+Each IT class boots its own container (~12 s) and reuses it across the methods in that class
+via `@TestInstance(PER_CLASS)` + a `static @Container` (or, for `SlowMigrationIT`, a manually
+managed container so `Testcontainers.exposeHostPorts(...)` runs first). Total runtime is
+≈ 35 s on a warm Docker host.

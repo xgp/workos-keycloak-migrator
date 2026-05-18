@@ -7,7 +7,7 @@
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
-    <logger name="io.phasetwo.wkm" level="INFO" />
+    <logger name="io.phasetwo.migration" level="INFO" />
     <logger name="org.testcontainers" level="INFO" />
     <logger name="okhttp3" level="WARN" />
 </configuration>
